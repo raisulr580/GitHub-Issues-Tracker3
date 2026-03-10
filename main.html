@@ -1,0 +1,595 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GitHub Issues Tracker</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root {
+      --primary: #0366d6;
+      --active-tab: #6f42c1;
+      --open: #2ecc71;
+      --closed: #9b59b6;
+      --gray: #7f8c8d;
+      --light-gray: #f6f8fa;
+      --deep-gray: #495057;
+      --bug-text: #c62828;
+      --bug-bg: #ffebee;
+      --enhancement-text: #2e7d32;
+      --enhancement-bg: #e8f5e9;
+      --help-text: #e67e22;
+      --help-bg: #fff0e6;
+      --goodfirst-text: #27ae60;
+      --goodfirst-bg: #e8f8f5;
+      --doc-text: #8e44ad;
+      --doc-bg: #f5ebfa;
+      --other-text: #d35400;
+      --other-bg: #fff5e6;
+      --high: #c62828;
+      --medium: #f57c00;
+      --low: #adb5bd;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f6fa;
+      color: #2c3e50;
+      min-height: 100vh;
+    }
+
+    .navbar {
+      background: white;
+      border-bottom: 1px solid #dfe6e9;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #24292e;
+    }
+
+    .brand img {
+      height: 38px;
+      width: auto;
+    }
+
+    .search-container {
+      display: flex;
+      gap: 8px;
+      max-width: 380px;
+      width: 100%;
+    }
+
+    .search-container input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .search-container button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 1rem;
+    }
+
+    .tabs-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 24px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .tab {
+      padding: 10px 28px;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #586069;
+      background: white;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 90px;
+      text-align: center;
+    }
+
+ .tab.active {
+  background: #0366d6; 
+  color: white;
+  border-color: #0366d6; 
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(3,102,214,0.3); 
+ }
+
+
+    .tabs-underline {
+      height: 1px;
+      background: #e1e4e8;
+      margin-bottom: 28px;
+    }
+
+    .stats-box {
+      background: white;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .issue-count-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .issue-count-area img {
+      height: 42px;
+      width: auto;
+    }
+
+    .issue-count-area h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #24292e;
+    }
+
+    .issue-count-area p {
+      font-size: 1.05rem;
+      color: #586069;
+      margin-top: 4px;
+    }
+
+    .status-legend {
+      display: flex;
+      gap: 24px;
+      font-size: 1rem;
+      color: #24292e;
+      align-items: center;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #e1e4e8;
+      border-top: 5px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .issues-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .issue-card {
+      background: white;
+      border: 1px solid #d0d7de;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .issue-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    .card-top-border {
+      height: 6px;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .card-open .card-top-border { background: var(--open); }
+    .card-closed .card-top-border { background: var(--closed); }
+
+    .card-header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafbfc;
+    }
+
+    .status-icon {
+      width: 28px;
+      height: 28px;
+    }
+
+    .priority-badge {
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .priority-high { background: #ffebee; color: #c62828; }
+    .priority-medium { background: #fff3e0; color: #f57c00; }
+    .priority-low { background: #f1f3f5; color: #495057; }
+
+    .card-upper {
+      padding: 0 20px 20px;
+    }
+
+    .issue-title {
+      font-size: 1.18rem;
+      font-weight: 600;
+      margin: 16px 0 8px;
+      color: #24292e;
+    }
+
+    .issue-desc {
+      color: #586069;
+      font-size: 0.94rem;
+      line-height: 1.5;
+      margin-bottom: 16px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+   .labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;   
+  padding-bottom: 10px;  
+  position: relative;
+}
+
+
+    .labels::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      border-radius: 2px;
+      opacity: 0.8;
+    }
+
+    .label-badge {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+
+    .label-bug     { color: var(--bug-text);     background: var(--bug-bg);     border-color: var(--bug-text); }
+    .label-enhancement { color: var(--enhancement-text); background: var(--enhancement-bg); border-color: var(--enhancement-text); }
+    .label-helpwanted, .label-goodfirst, .label-doc, .label-other {
+      color: var(--help-text); background: var(--help-bg); border-color: var(--help-text);
+    }
+
+    .card-footer {
+      background: var(--footer-bg);
+      padding: 16px 20px;
+      border-top: 1px solid #ebedf0;
+      font-size: 0.88rem;
+      color: #586069;
+    }
+
+ .footer-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;   
+  align-items: center;
+}
+
+
+
+    .issue-number {
+      font-weight: 500;
+      color: #586069;
+    }
+
+    
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 640px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 24px 28px 20px;
+      background: #f6f8fa;
+      border-bottom: 1px solid #e1e4e8;
+    }
+
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #24292e;
+      margin-bottom: 12px;
+    }
+
+    .modal-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.95rem;
+      color: #586069;
+    }
+
+    .modal-status-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .modal-status-open { background: var(--open); }
+    .modal-status-closed { background: var(--closed); }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .modal-labels {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0 24px;
+    }
+
+    .modal-label {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+
+    .modal-desc {
+      color: #24292e;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .modal-info-box {
+      background: #f6f8fa;
+      padding: 20px 24px;
+      border-radius: 8px;
+      border: 1px solid #e1e4e8;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 32px;
+    }
+
+    .modal-info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .modal-info-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #586069;
+    }
+
+    .modal-info-value {
+      font-size: 1rem;
+      font-weight: 500;
+      color: #24292e;
+    }
+
+   
+
+.modal-priority {
+  padding: 4px 12px;       
+  border-radius: 999px;
+  font-size: 0.78rem;      
+  line-height: 1.2;
+  font-weight: 500;
+  color: white;
+  display: inline-block;
+  width: fit-content;
+  min-width: 0;
+  text-align: center;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+
+
+
+    .modal-priority.high { background: var(--high); }
+    .modal-priority.medium { background: var(--medium); }
+    .modal-priority.low { background: var(--low); }
+
+    .modal-close-area {
+      padding: 20px 28px;
+      text-align: right;
+      border-top: 1px solid #e1e4e8;
+    }
+
+    .modal-close-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .modal-close-btn:hover {
+      background: #005cc5;
+    }
+
+    @media (max-width: 768px) {
+      .modal-content { margin: 20px; }
+      .modal-info-box { grid-template-columns: 1fr; }
+      .modal-close-area { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="brand">
+      <img src="github-logo.png" alt="GitHub Logo">
+      GitHub Issues Tracker
+    </div>
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search issues..."/>
+      <button id="searchBtn">Search</button>
+    </div>
+  </nav>
+
+  <div class="tabs-container">
+    <div class="tabs">
+      <button class="tab active" data-status="all">All</button>
+      <button class="tab" data-status="open">Open</button>
+      <button class="tab" data-status="closed">Closed</button>
+    </div>
+
+    <div class="tabs-underline"></div>
+
+    <div class="stats-box">
+      <div class="issue-count-area">
+        <img src="Aperture.png" alt="Issues Icon">
+        <div>
+          <h2 id="issueCount">0 issues</h2>
+          <p>Track and manage your project issues</p>
+        </div>
+      </div>
+
+      <div class="status-legend">
+        <div class="status-item">
+          <span class="status-dot" style="background:var(--open);"></span>
+          Open
+        </div>
+        <div class="status-item">
+          <span class="status-dot" style="background:var(--closed);"></span>
+          Closed
+        </div>
+      </div>
+    </div>
+
+    <div id="issuesGrid" class="issues-grid"></div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  
+  <div class="modal" id="issueModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle"></h2>
+
+        <div class="modal-meta">
+          <span class="modal-status-btn" id="modalStatusBtn"></span>
+          <span id="modalOpenedBy"></span>
+          <span id="modalCreatedDate"></span>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-labels" id="modalLabels"></div>
+
+        <p class="modal-desc" id="modalDesc"></p>
+
+        <div class="modal-info-box">
+          <div class="modal-info-item">
+            <div class="modal-info-label">Assignee:</div>
+            <div class="modal-info-value" id="modalAssignee"></div>
+          </div>
+
+          <div class="modal-info-item">
+            <div class="modal-info-label">Priority:</div>
+            <span class="modal-priority" id="modalPriority"></span>
+          </div>
+        </div>
+
+        <div class="modal-close-area">
+          <button class="modal-close-btn" id="modalCloseBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
